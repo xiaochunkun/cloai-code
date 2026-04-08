@@ -788,6 +788,14 @@ export async function* queryModelWithStreaming({
   })
 }
 
+function shouldDisableNonStreamingFallbackForCompatProvider(): boolean {
+  const activeProvider = getActiveProviderConfig(readCustomApiStorage())
+  return (
+    activeProvider?.kind === 'openai-like' ||
+    activeProvider?.kind === 'gemini-like'
+  )
+}
+
 /**
  * Determines if an LSP tool should be deferred (tool appears with defer_loading: true)
  * because LSP initialization is not yet complete.
@@ -2694,6 +2702,7 @@ async function* queryModel(
       // and runs it again. See inc-4258.
       const disableFallback =
         isEnvTruthy(process.env.CLAUDE_CODE_DISABLE_NONSTREAMING_FALLBACK) ||
+        shouldDisableNonStreamingFallbackForCompatProvider() ||
         getFeatureValue_CACHED_MAY_BE_STALE(
           'tengu_disable_streaming_to_non_streaming_fallback',
           false,
@@ -2837,6 +2846,7 @@ async function* queryModel(
     // with raw streams, 404s are thrown during creation (caught here).
     const is404StreamCreationError =
       !didFallBackToNonStreaming &&
+      !shouldDisableNonStreamingFallbackForCompatProvider() &&
       errorFromRetry instanceof CannotRetryError &&
       errorFromRetry.originalError instanceof APIError &&
       errorFromRetry.originalError.status === 404
