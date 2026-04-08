@@ -911,7 +911,17 @@ async function approximateMessageTokens(
     [],
   )
 
-  breakdown.totalTokens = approximateMessageTokens ?? 0
+  const estimatedBreakdownTotal =
+    breakdown.toolCallTokens +
+    breakdown.toolResultTokens +
+    breakdown.attachmentTokens +
+    breakdown.assistantMessageTokens +
+    breakdown.userMessageTokens
+
+  breakdown.totalTokens = Math.max(
+    approximateMessageTokens ?? 0,
+    estimatedBreakdownTotal,
+  )
   return breakdown
 }
 
@@ -1001,7 +1011,7 @@ export async function analyzeContextUsage(
   // Check if autocompact is enabled and calculate threshold
   const isAutoCompact = isAutoCompactEnabled()
   const autoCompactThreshold = isAutoCompact
-    ? getEffectiveContextWindowSize(model) - AUTOCOMPACT_BUFFER_TOKENS
+    ? getEffectiveContextWindowSize(runtimeModel) - AUTOCOMPACT_BUFFER_TOKENS
     : undefined
 
   // Create categories
@@ -1170,8 +1180,16 @@ export async function analyzeContextUsage(
       apiUsage.cache_read_input_tokens
     : null
 
+  // Treat an all-zero usage block as unavailable for `/context` purposes.
+  // Some sessions can have a placeholder usage object before a meaningful API
+  // usage snapshot exists; using it would incorrectly override the estimated
+  // context total and show `0 / N` despite non-zero category estimates below.
+  const hasMeaningfulApiUsage = totalFromAPI !== null && totalFromAPI > 0
+
   // Use API total if available, otherwise fall back to estimated total
-  const finalTotalTokens = totalFromAPI ?? totalIncludingReserved
+  const finalTotalTokens = hasMeaningfulApiUsage
+    ? totalFromAPI
+    : totalIncludingReserved
 
   // Pre-calculate grid based on model context window and terminal width
   // For narrow screens (< 80 cols), use 5x5 for 200k models, 5x10 for 1M+ models
@@ -1345,7 +1363,7 @@ export async function analyzeContextUsage(
     totalTokens: finalTotalTokens,
     maxTokens: contextWindow,
     rawMaxTokens: contextWindow,
-    percentage: Math.round((finalTotalTokens / contextWindow) * 100),
+    percentage: Number(((finalTotalTokens / contextWindow) * 100).toFixed(1)),
     gridRows,
     model: runtimeModel,
     memoryFiles: memoryFileDetails,
