@@ -19,23 +19,15 @@
 
 ---
 
-## 2026 年 4 月 4 日最新更新
+## 近期重要更新
 
-- ⭐**支持 Responses API 的缓存命中，成本降低 90%** 
-- 修复上下文穿插造成的回复不连续问题
-- 针对部分 OpenAI 兼容路由补充更稳的缓存键支持
-- 支持多模态以及图像粘贴到对话框
-<img width="1872" height="643" alt="image" src="https://github.com/user-attachments/assets/d34682db-88be-49f0-af6f-c1e249f1a8fe" />
+更新于 **2026 年 4 月 8 日**
 
-注：/chat/completions不支持缓存。请确保使用/responses方式请求，才能命中缓存。支持缓存的模型：
-  * gpt-5.4, gpt-5.2, gpt-5.1-codex-max, gpt-5.1, gpt-5.1-codex, gpt-5.1-codex-mini, gpt-5.1-chat-latest, gpt-5, gpt-5-codex, gpt-4.1
-  * 兼容`prompt_cache_key`的其他模型。
+- ⭐ 支持 Responses API 缓存命中，显著降低成本并提速。
+- 修复当 API BaseURL 使用 `IP + 端口` 形式时，兼容 Provider 被错误降级为 Anthropic 路径，导致请求失败的问题。
+- 修复多轮工具调用与 Plan Mode 自动切换场景下，API 请求异常失败的问题。
 
-## 2026 年 4 月 3 日更新
-
-- Codex OAuth、Responses API、Gemini OAuth 和 Vertex API 支持
-- 支持设定推理强度
-- 支持思维链流式输出
+更多历史更新与细节说明请跳转查看：[详细更新日志](#详细更新日志)
 
 ---
 
@@ -445,3 +437,31 @@ cloai
   * ✅ **完美适配**的纯服务器与无屏幕终端基因。
 
 如果你正在寻觅一个**更纯粹、更灵活、更能从容应对复杂网络与部署环境**的代码助手 CLI 方案，那么，欢迎使用 `cloaiCode`。🔥
+
+-----
+
+## 详细更新日志
+
+### 2026 年 4 月 8 日更新
+
+- 修复当 API BaseURL 使用 `IP + 端口` 形式时，兼容 Provider 被错误降级为 Anthropic 路径，导致请求失败的问题。
+- 修复多轮工具调用与 Plan Mode 自动切换场景下，API 请求异常失败的问题。
+
+### 2026 年 4 月 4 日更新
+
+- ⭐**支持 Responses API 的缓存命中，成本降低 90%，并提速**
+- 修复上下文穿插造成的回复不连续问题
+- 针对部分 OpenAI 兼容路由补充更稳的缓存键支持
+- 支持多模态以及图像粘贴到对话框
+
+<img width="1872" height="643" alt="image" src="https://github.com/user-attachments/assets/d34682db-88be-49f0-af6f-c1e249f1a8fe" />
+
+注：`/chat/completions` 不支持缓存。请确保使用 `/responses` 方式请求，才能命中缓存。支持缓存的模型：
+- `gpt-5.4`, `gpt-5.2`, `gpt-5.1-codex-max`, `gpt-5.1`, `gpt-5.1-codex`, `gpt-5.1-codex-mini`, `gpt-5.1-chat-latest`, `gpt-5`, `gpt-5-codex`, `gpt-4.1`
+- 兼容 `prompt_cache_key` 的其他模型
+
+### 2026 年 4 月 3 日更新
+
+- Codex OAuth、Responses API、Gemini OAuth 和 Vertex API 支持
+- 支持设定推理强度
+- 支持思维链流式输出
