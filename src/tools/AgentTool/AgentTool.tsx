@@ -3,6 +3,7 @@ import * as React from 'react';
 import { buildTool, type ToolDef, toolMatchesName } from 'src/Tool.js';
 import type { Message as MessageType, NormalizedUserMessage } from 'src/types/message.js';
 import { getQuerySourceForAgent } from 'src/utils/promptCategory.js';
+import { readCustomApiStorage } from '../../utils/customApiStorage.js';
 import { z } from 'zod/v4';
 import { clearInvokedSkillsForAgent, getSdkAgentProgressSummariesEnabled } from '../../bootstrap/state.js';
 import { enhanceSystemPromptWithEnvDetails, getSystemPrompt } from '../../constants/prompts.js';
@@ -119,7 +120,14 @@ export const inputSchema = lazySchema(() => {
   // by forceAsync) or "schema hides a param that would've worked" (gate
   // flips off mid-session: everything still runs async via memoized
   // forceAsync). No Zod rejection, no crash — unlike required→optional.
-  return isBackgroundTasksDisabled || isForkSubagentEnabled() ? schema.omit({
+  // Also omit run_in_background for non-Anthropic providers: these models
+  // tend to use it inappropriately, launching background tasks then
+  // continuing without waiting for results. Hiding the param from the
+  // schema prevents the model from requesting it in the first place.
+  const providerKind = readCustomApiStorage().providerKind;
+  const isNonAnthropicSchema = providerKind === 'openai-like' || providerKind === 'gemini-like';
+  const hideRunInBackground = isBackgroundTasksDisabled || isForkSubagentEnabled() || isNonAnthropicSchema;
+  return hideRunInBackground ? schema.omit({
     run_in_background: true
   }) : schema;
 });
@@ -539,13 +547,26 @@ export const AgentTool = buildTool({
         content: prompt
       })];
     }
+
+    // OpenAI-compatible models tend to set run_in_background on tasks that
+    // should be synchronous, then continue generating without waiting for
+    // results. Ignore the model's run_in_background request when using a
+    // non-Anthropic provider so the parent agent always sees real results
+    // before continuing. Parallel tool calls are still parallel — this only
+    // prevents fire-and-forget semantics where results are discarded.
+    const isNonAnthropicProvider = (() => {
+      const kind = readCustomApiStorage().providerKind;
+      return kind === 'openai-like' || kind === 'gemini-like';
+    })();
+    const effectiveRunInBackground = isNonAnthropicProvider ? false : run_in_background === true;
+
     const metadata = {
       prompt,
       resolvedAgentModel,
       isBuiltInAgent: isBuiltInAgent(selectedAgent),
       startTime,
       agentType: selectedAgent.agentType,
-      isAsync: (run_in_background === true || selectedAgent.background === true) && !isBackgroundTasksDisabled
+      isAsync: (effectiveRunInBackground || selectedAgent.background === true) && !isBackgroundTasksDisabled
     };
 
     // Use inline env check instead of coordinatorModule to avoid circular
@@ -564,7 +585,7 @@ export const AgentTool = buildTool({
     // <task-notification> re-entry there is handled by the else branch
     // below (registerAsyncAgentTask + notifyOnCompletion).
     const assistantForceAsync = feature('KAIROS') ? appState.kairosEnabled : false;
-    const shouldRunAsync = (run_in_background === true || selectedAgent.background === true || isCoordinator || forceAsync || assistantForceAsync || (proactiveModule?.isProactiveActive() ?? false)) && !isBackgroundTasksDisabled;
+    const shouldRunAsync = (effectiveRunInBackground || selectedAgent.background === true || isCoordinator || forceAsync || assistantForceAsync || (proactiveModule?.isProactiveActive() ?? false)) && !isBackgroundTasksDisabled;
     // Assemble the worker's tool pool independently of the parent's.
     // Workers always get their tools from assembleToolPool with their own
     // permission mode, so they aren't affected by the parent's tool
