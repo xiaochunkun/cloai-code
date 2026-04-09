@@ -49,22 +49,16 @@ function fg(r, g, b) {
   return `\x1b[38;2;${r};${g};${b}m`;
 }
 
-function bg(r, g, b) {
-  return `\x1b[48;2;${r};${g};${b}m`;
-}
-
 function style(text, ...codes) {
   return `${codes.join("")}${text}${RESET}`;
 }
 
 function badge(icon, text, colors) {
-  const frame = style("▎", fg(...colors.accent), DIM);
-  const body = style(` ${icon} ${text} `, fg(...colors.fg), bg(...colors.bg), BOLD);
-  return `${frame}${body}`;
+  return style(`${icon} ${text}`, fg(...colors.fg), BOLD);
 }
 
 function separator() {
-  return style("•", fg(110, 118, 140), DIM);
+  return style("|", fg(110, 118, 140), DIM);
 }
 
 function formatTokens(value) {
