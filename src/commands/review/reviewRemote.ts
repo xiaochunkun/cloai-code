@@ -214,7 +214,7 @@ export async function launchRemoteReview(
     }
     session = await teleportToRemote({
       initialMessage: null,
-      description: `ultrareview: ${repo.owner}/${repo.name}#${prNumber}`,
+      description: `远程审查：${repo.owner}/${repo.name}#${prNumber}`,
       signal: context.abortController.signal,
       branchName: `refs/pull/${prNumber}/head`,
       environmentId: CODE_REVIEW_ENV_ID,
@@ -269,7 +269,7 @@ export async function launchRemoteReview(
 
     session = await teleportToRemote({
       initialMessage: null,
-      description: `ultrareview: ${baseBranch}`,
+      description: `远程审查：${baseBranch}`,
       signal: context.abortController.signal,
       useBundle: true,
       environmentId: CODE_REVIEW_ENV_ID,
